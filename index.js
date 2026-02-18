@@ -163,7 +163,7 @@ client.on('ready', async () => {
 
 client.slashCommands = new Collection()
 
-client.login(config.token)
+client.login(process.env.TOKEN);
 
 require('./handler')(client)
 
