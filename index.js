@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Collection, Partials, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, PermissionFlagsBits } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose(); // <--- LA PIEZA QUE FALTABA
+const sqlite3 = require('sqlite3').verbose(); // <--- DEBE ESTAR AQUÍ ARRIBA
 const config = require('./DataBaseJson/config.json');
 
 // Luego sigue tu código normal: const client = new Client({ ... });
@@ -169,7 +169,17 @@ require('./handler')(client)
 const dbPath = path.join(__dirname, 'tickets.db');
 
 // Crear base de datos y tablas
+// Aseguramos la definición justo antes de usarla
+const sqlite3 = require('sqlite3').verbose(); 
+const dbPath = path.join(__dirname, 'tickets.db');
+
 const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error('❌ Error al abrir la base de datos:', err.message);
+    } else {
+        console.log('✅ Conectado a la base de datos SQLite para tickets.');
+    }
+});
     if (err) {
         console.error("Error al conectar a la base de datos:", err.message);
     } else {
