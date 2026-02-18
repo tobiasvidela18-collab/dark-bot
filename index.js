@@ -1,3 +1,5 @@
+require('dotenv').config(); // Esto lee el archivo .env
+const { Client, GatewayIntentBits } = require('discord.js');
 const Discord = require("discord.js");
 const path = require('path')
 const sqlite3 = require('sqlite3').verbose();
