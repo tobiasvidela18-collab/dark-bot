@@ -2,10 +2,18 @@ require('dotenv').config();
 const { 
     Client, 
     GatewayIntentBits, 
-    Collection, // <--- ESTO DEBE ESTAR AQUÍ
+    Collection, 
     Partials, 
-    EmbedBuilder 
+    EmbedBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    ActionRowBuilder, 
+    PermissionFlagsBits 
 } = require('discord.js');
+
+const fs = require('fs');
+const path = require('path'); // Para que no falle la línea 171
+const config = require('./DataBaseJson/config.json'); // Para que no falle lo de "config"
 
 // Luego sigue tu código normal: const client = new Client({ ... });
 
