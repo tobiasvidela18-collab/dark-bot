@@ -30,7 +30,7 @@ module.exports = (client) => {
       .setFooter(`¡Ahora somos ${guild.memberCount} miembros!`, guild.iconURL({ dynamic: true }))
       .setTimestamp();
 
-    const welcomeChannel = client.channels.cache.get("1341973475354476554");
+    const welcomeChannel = client.channels.cache.get("1469953972197654570");
     if (welcomeChannel) {
       await welcomeChannel.send({
         content: `👋 ¡Bienvenido/a ${member}! Esperamos que disfrutes tu estadía en **${guild.name}™**.`,
