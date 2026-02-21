@@ -47,13 +47,13 @@ module.exports = {
         name: "comentario", 
         description: "Comentario del comprador", 
         type: "STRING", 
-        required: true 
+        required: false 
     },
     { 
         name: "url_imagen", 
         description: "Pega aquí el LINK de la foto (ej: https://...)", 
         type: "STRING", 
-        required: false 
+        required: true 
     }
   ],
 
