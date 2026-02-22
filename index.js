@@ -17,7 +17,7 @@ const client = new Client({
 client.slashCommands = new Collection();
 
 // --- CARGA DEL HANDLER (ESTO FALTABA) ---
-require('./Handler')(client);
+require('./handler')(client);
 
 // --- CARGA DE EVENTOS ---
 const eventsPath = path.join(__dirname, 'Events');
