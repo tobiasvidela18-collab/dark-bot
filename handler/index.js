@@ -3,60 +3,59 @@ const path = require("path");
 const Discord = require("discord.js");
 
 module.exports = async (client) => {
-  client.slashCommands = new Discord.Collection();
+    client.slashCommands = new Discord.Collection();
 
-  async function loadCommands() {
-    const SlashsArray = [];
-    const commandFolders = await fs.readdir(path.join(process.cwd(), 'Comandos'));
+    async function loadCommands() {
+        const SlashsArray = [];
+        const commandFolders = await fs.readdir(path.join(process.cwd(), 'Comandos'));
 
-    for (const folder of commandFolders) {
-      const folderPath = path.join(process.cwd(), 'Comandos', folder);
-      const commandFiles = await fs.readdir(folderPath);
+        for (const folder of commandFolders) {
+            const folderPath = path.join(process.cwd(), 'Comandos', folder);
+            const commandFiles = await fs.readdir(folderPath);
 
-      for (const file of commandFiles) {
-        if (!file.endsWith('.js')) continue;
+            for (const file of commandFiles) {
+                if (!file.endsWith('.js')) continue;
 
-        try {
-          // Eliminamos el cache para que los cambios se apliquen siempre
-          delete require.cache[require.resolve(`../Comandos/${folder}/${file}`)];
-          const command = require(`../Comandos/${folder}/${file}`);
+                try {
+                    const commandPath = `../Comandos/${folder}/${file}`;
+                    delete require.cache[require.resolve(commandPath)];
+                    const command = require(commandPath);
 
-          if (!command?.name) {
-            console.warn(`⚠️ El comando en ${file} no tiene nombre.`);
-            continue;
-          }
+                    if (!command?.name) continue;
 
-          // IMPORTANTE: Solo enviamos a Discord name, description y options
-          // Esto evita que Discord rechace el comando por tener la función "run" dentro
-          const commandData = {
-            name: command.name.toLowerCase(),
-            description: command.description || "Sin descripción",
-            options: command.options || []
-          };
+                    // Limpieza total para Discord API
+                    const commandData = {
+                        name: command.name.toLowerCase().trim(),
+                        description: command.description || "Sin descripción",
+                        options: command.options || []
+                    };
 
-          client.slashCommands.set(commandData.name, command);
-          SlashsArray.push(commandData);
+                    client.slashCommands.set(commandData.name, command);
+                    SlashsArray.push(commandData);
 
-          console.log(`Loaded: ${commandData.name}`);
-        } catch (error) {
-          console.error(`❌ Error al cargar el comando ${file}:`, error);
+                    console.log(`✅ Comando Cargado: ${commandData.name}`);
+                } catch (error) {
+                    console.error(`❌ Error en comando ${file}:`, error);
+                }
+            }
         }
-      }
+        return SlashsArray;
     }
-    return SlashsArray;
-  }
 
-  const SlashsArray = await loadCommands();
+    const SlashsArray = await loadCommands();
 
-  client.once("ready", async () => {
-    try {
-      // Registramos los comandos en todos los servidores donde esté el bot
-      for (const guild of client.guilds.cache.values()) {
-        await guild.commands.set(SlashsArray);
-      }
-      console.log(`✅ ${SlashsArray.length} Comandos registrados correctamente en Discord.`);
-    } catch (error) {
-      console.error('❌ Error crítico al registrar comandos:', error);
-    }
-  });
+    client.once("ready", async () => {
+        try {
+            // Registro global y por servidor para asegurar que aparezcan
+            await client.application.commands.set(SlashsArray);
+            
+            for (const guild of client.guilds.cache.values()) {
+                await guild.commands.set(SlashsArray);
+            }
+            
+            console.log(`🚀 API: ${SlashsArray.length} Comandos Slash sincronizados con Discord.`);
+        } catch (error) {
+            console.error('❌ Error al registrar en la API:', error);
+        }
+    });
 };
