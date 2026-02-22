@@ -71,7 +71,7 @@ client.on('interactionCreate', async (interaction) => {
             return await interaction.showModal(modal);
         }
 
-        // ACCIONES DE STAFF DENTRO DEL TICKET
+        // ACCIONES DE STAFF
         if (customId === "claim_ticket") {
             if (!member.roles.cache.has(rolPermitidoId)) return interaction.reply({ content: "Solo staff.", ephemeral: true });
             return interaction.reply({ embeds: [new MessageEmbed().setColor("GREEN").setDescription(`✅ El staff ${user} ha reclamado este ticket.`)] });
@@ -95,11 +95,11 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // --- MANEJADOR DE SUBMIT DE MODALS ---
+    // --- MANEJADOR DE ENVÍO DE MODALS (TICKETS Y EMBED) ---
     if (interaction.isModalSubmit()) {
         const { customId, guild, user, fields } = interaction;
 
-        // FORMULARIOS DE TICKETS
+        // MANEJADOR TICKETS
         if (customId.startsWith('modal_')) {
             await interaction.deferReply({ ephemeral: true });
             let tipo = customId.replace('modal_', '');
@@ -141,7 +141,7 @@ client.on('interactionCreate', async (interaction) => {
                     { name: "🎟️ Ticket", value: `#${Math.floor(Math.random() * 900) + 100}`, inline: true },
                     { name: "📂 Categoría", value: tipo.toUpperCase(), inline: true }
                 )
-                .setFooter({ text: `${guild.name} • ${moment().format('HH:mm')}`, iconURL: guild.iconURL({dynamic: true}) });
+                .setFooter({ text: `${guild.name}`, iconURL: guild.iconURL({dynamic: true}) });
 
             const embedRespuestas = new MessageEmbed()
                 .setAuthor({ name: "📋 Respuestas del Formulario" })
@@ -158,8 +158,8 @@ client.on('interactionCreate', async (interaction) => {
             await ticketChannel.send({ content: `${user} | <@&${rolPermitidoId}>`, embeds: [embedInfo, embedRespuestas], components: [rowBotones] });
         }
 
-        // --- CORRECCIÓN DEFINITIVA PARA /EMBED ---
-        if (customId === 'modalanuncio') {
+        // --- MANEJADOR DE EMBED V2 (PARA ELIMINAR EL ERROR DE NO RESPONDE) ---
+        if (customId === 'modalanuncio_v2') {
             await interaction.deferReply({ ephemeral: true }); 
 
             try {
@@ -182,11 +182,13 @@ client.on('interactionCreate', async (interaction) => {
                 if (banner && banner.includes("http")) embedanun.setImage(banner);
 
                 await interaction.channel.send({ embeds: [embedanun] });
+                
+                // Confirmamos la interacción para que Discord quite el mensaje de error
                 return await interaction.editReply({ content: `✅ Embed enviado correctamente.` });
 
             } catch (error) {
-                console.error(error);
-                return await interaction.editReply({ content: `❌ Error al procesar el embed.` });
+                console.error("Error en Modal:", error);
+                return await interaction.editReply({ content: `❌ Hubo un error al procesar el formulario.` });
             }
         }
     }
