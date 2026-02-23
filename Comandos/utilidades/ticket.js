@@ -7,7 +7,6 @@ module.exports = {
 
   run: async (client, interaction) => {
 
-    // En v13 se usa el string de permiso directamente
     if (!interaction.member.permissions.has("MANAGE_GUILD")) {
       return interaction.reply({ 
         content: `❌ | No tienes permiso para usar este comando.`, 
@@ -15,7 +14,6 @@ module.exports = {
       });
     }
 
-    // MessageEmbed v13: No usa objetos en Author ni Footer
     let embed = new Discord.MessageEmbed()
       .setColor(config.colorpredeterminado || "#000001")
       .setTitle(`Tickets System`)
@@ -24,32 +22,31 @@ module.exports = {
         `🇺🇸 · **Hello!** To open a ticket, you must press one of the following buttons.\n\n` +
         `🇧🇷 · **Olá!** Para abrir um ticket, você deve pressionar um dos botões abaixo.`
       )
-      .setAuthor(client.user.username, client.user.displayAvatarURL()) 
-      .setFooter('©️ Host - Todos los derechos reservados.');
+      .setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL() }) 
+      .setFooter({ text: '710 Shop - Todos los derechos reservados.' });
 
-    // MessageActionRow y MessageButton v13
     let painel = new Discord.MessageActionRow().addComponents(
       new Discord.MessageButton()
-        .setCustomId("ticket_compra") // Cambiado para identificar el tipo
+        .setCustomId("ticket_compra")
         .setLabel("Compra")
-        .setEmoji("1415071860131102841")
+        .setEmoji("🛒")
         .setStyle("SECONDARY"),
 
       new Discord.MessageButton()
         .setCustomId("ticket_soporte")
         .setLabel("Soporte")
-        .setEmoji("1415072399942090883")
+        .setEmoji("🛠️")
         .setStyle("SECONDARY"),
 
       new Discord.MessageButton()
         .setCustomId("ticket_partner")
         .setLabel("Partner")
-        .setEmoji("1415072383517196318")
+        .setEmoji("🤝")
         .setStyle("SECONDARY")
     );
 
-    // Respuesta efímera de confirmación
-    await interaction.reply({ content: `✅ ¡Mensaje enviado!`, ephemeral: true });
+    // Confirmación al usuario que tiró el comando
+    await interaction.reply({ content: `✅ ¡Panel de tickets enviado!`, ephemeral: true });
     
     // Envío del panel al canal
     await interaction.channel.send({ embeds: [embed], components: [painel] });
