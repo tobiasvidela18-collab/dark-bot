@@ -193,5 +193,20 @@ client.on('voiceStateUpdate', (o, n) => {
     else if (o.channelId !== n.channelId) enviarLog(e.setTitle("🔄 Voz: Cambio de Sala").setDescription(`${n.member.user.tag} se movió de ${o.channel.name} a ${n.channel.name}`));
 });
 
-client.on('ready', () => { console.log(`🔥 ${client.user.username} - SISTEMA PRO ACTIVADO`); });
+client.on('ready', () => { 
+    console.log(`🔥 ${client.user.username} - SISTEMA PRO ACTIVADO`); 
+
+    // Aviso automático en el canal de logs al encenderse
+    const canalLogs = client.channels.cache.get(canalLogsId);"1470928427199631412"
+    if (canalLogs) {
+        const embedOnline = new MessageEmbed()
+            .setTitle("✅ Bot Online")
+            .setDescription("El bot **710 Shop** está actualmente online 🔥")
+            .setColor("#00FF00")
+            .setTimestamp();
+        
+        canalLogs.send({ embeds: [embedOnline] }).catch(console.error);
+    }
+});
+
 client.login(process.env.TOKEN || config.token);
