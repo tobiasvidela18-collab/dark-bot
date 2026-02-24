@@ -3,6 +3,7 @@ const { Client, Collection, MessageEmbed, MessageActionRow, MessageButton, Modal
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
+const cron = require('node-cron'); // Asegúrate de tener instalado: npm install node-cron
 const config = require('./DataBaseJson/config.json');
 
 moment.locale('es');
@@ -11,6 +12,18 @@ const client = new Client({
     intents: ["GUILDS", "GUILD_MEMBERS", "GUILD_MESSAGES", "GUILD_MESSAGE_REACTIONS", "GUILD_VOICE_STATES", "GUILD_PRESENCES"],
     partials: ["MESSAGE", "CHANNEL", "REACTION", "USER", "GUILD_MEMBER"],
 });
+
+// --- 🛠️ SISTEMA DE CONTADOR DIARIO ---
+const contadorPath = './DataBaseJson/contador.json';
+if (!fs.existsSync(contadorPath)) {
+    fs.writeFileSync(contadorPath, JSON.stringify({ count: 0 }, null, 2));
+}
+
+// Reinicio del contador a las 00:00hs
+cron.schedule('0 0 * * *', () => {
+    fs.writeFileSync(contadorPath, JSON.stringify({ count: 0 }, null, 2));
+    console.log("✅ Contador diario reiniciado.");
+}, { timezone: "America/Argentina/Buenos_Aires" }); // Ajusta tu zona horaria
 
 client.slashCommands = new Collection();
 require('./handler')(client);
@@ -34,14 +47,12 @@ const enviarLog = (embed) => {
 // --- LÓGICA DE INTERACCIONES ---
 client.on('interactionCreate', async (interaction) => {
     
-    // Slash Commands
     if (interaction.isCommand()) {
         const cmd = client.slashCommands.get(interaction.commandName);
         if (cmd) try { await cmd.run(client, interaction); } catch (e) { console.error(e); }
         return;
     }
 
-    // Botones
     if (interaction.isButton()) {
         const { customId, member, guild, user, channel } = interaction;
 
@@ -78,10 +89,9 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // Modals (Tickets y Embed Personalizado)
     if (interaction.isModalSubmit()) {
         
-        // --- MODAL DE EMBED PERSONALIZADO ---
+        // --- MODAL DE EMBED PERSONALIZADO (CON BOTÓN DE COMPRA) ---
         if (interaction.customId === 'modalanuncio_v2') {
             await interaction.deferReply({ ephemeral: true });
             const titulo = interaction.fields.getTextInputValue('titulo');
@@ -89,6 +99,10 @@ client.on('interactionCreate', async (interaction) => {
             const thumb = interaction.fields.getTextInputValue('thumbnail');
             const banner = interaction.fields.getTextInputValue('banner');
             const color = interaction.fields.getTextInputValue('cor');
+
+            // ID del canal de compra para el botón
+            const canalCompraId = "1469950823474659409"; 
+            const linkCompra = `https://discord.com/channels/${interaction.guild.id}/${canalCompraId}`;
 
             const embedUser = new MessageEmbed()
                 .setTitle(titulo || "")
@@ -99,8 +113,15 @@ client.on('interactionCreate', async (interaction) => {
             if (thumb && thumb.startsWith('http')) embedUser.setThumbnail(thumb);
             if (banner && banner.startsWith('http')) embedUser.setImage(banner);
 
-            await interaction.channel.send({ embeds: [embedUser] });
-            return await interaction.editReply({ content: "✅ Embed enviado correctamente." });
+            const rowBoton = new MessageActionRow().addComponents(
+                new MessageButton()
+                    .setLabel("🛒Comprar Aqui / Buy Here")
+                    .setStyle('LINK')
+                    .setURL(linkCompra)
+            );
+
+            await interaction.channel.send({ embeds: [embedUser], components: [rowBoton] });
+            return await interaction.editReply({ content: "✅ Embed enviado con botón de compra." });
         }
 
         // --- LÓGICA DE TICKETS ---
@@ -142,7 +163,7 @@ client.on('interactionCreate', async (interaction) => {
                 ]
             });
 
-            const ticketID = Math.floor(Math.random() * 900000000000000) + 100000000000000;
+            const ticketID = Math.floor(Math.random() * 900000) + 100000;
             const fecha = moment().format('dddd, D [de] MMMM [de] YYYY HH:mm');
 
             const embedBienvenida = new MessageEmbed()
@@ -172,15 +193,17 @@ client.on('interactionCreate', async (interaction) => {
 
         } catch (e) {
             console.error(e);
-            await interaction.editReply({ content: "❌ Error al crear el canal. Revisa los permisos." });
+            await interaction.editReply({ content: "❌ Error al crear el canal." });
         }
     }
 });
 
-// --- 🕵️‍♂️ SISTEMA DE LOGS ---
+// --- 🕵️‍♂️ VIGILANCIA Y AUDITORÍA (EXTENDIDO) ---
+
+// Mensajes Borrados/Editados
 client.on('messageDelete', m => {
     if (m.author?.bot) return;
-    enviarLog(new MessageEmbed().setTitle("🗑️ Mensaje Borrado").setColor("RED").addField("Autor", `${m.author?.tag || "Unknown"}`, true).addField("Canal", `${m.channel}`, true).addField("Contenido", `\`\`\`${m.content || "Sin texto"}\`\`\``).setTimestamp());
+    enviarLog(new MessageEmbed().setTitle("🗑️ Mensaje Borrado").setColor("RED").addField("Autor", `${m.author?.tag || "Unknown"}`, true).addField("Canal", `${m.channel}`, true).addField("Contenido", `\`\`\`${m.content || "Sin texto/Imagen"}\`\`\``).setTimestamp());
 });
 
 client.on('messageUpdate', (o, n) => {
@@ -188,25 +211,45 @@ client.on('messageUpdate', (o, n) => {
     enviarLog(new MessageEmbed().setTitle("✏️ Mensaje Editado").setColor("YELLOW").addField("Autor", `${o.author.tag}`, true).addField("Antes", `\`\`\`${o.content}\`\`\``).addField("Después", `\`\`\`${n.content}\`\`\``).setTimestamp());
 });
 
-client.on('guildMemberAdd', m => enviarLog(new MessageEmbed().setTitle("📥 Miembro Nuevo").setColor("GREEN").setDescription(`**${m.user.tag}** se unió al servidor.`).setThumbnail(m.user.displayAvatarURL()).setTimestamp()));
+// Canales Creados/Borrados/Editados
+client.on('channelCreate', c => enviarLog(new MessageEmbed().setTitle("🆕 Canal Creado").setColor("GREEN").setDescription(`Nombre: **${c.name}**\nTipo: **${c.type}**`).setTimestamp()));
+client.on('channelDelete', c => enviarLog(new MessageEmbed().setTitle("🛑 Canal Borrado").setColor("RED").setDescription(`Nombre: **${c.name}**`).setTimestamp()));
+client.on('channelUpdate', (o, n) => {
+    if (o.name !== n.name) enviarLog(new MessageEmbed().setTitle("📝 Canal Editado (Nombre)").setColor("BLUE").setDescription(`Antes: **${o.name}**\nDespués: **${n.name}**`).setTimestamp());
+});
+
+// Roles Creados/Borrados/Editados/Asignados
+client.on('roleCreate', r => enviarLog(new MessageEmbed().setTitle("🆕 Rol Creado").setColor("GREEN").setDescription(`Nombre: **${r.name}**`).setTimestamp()));
+client.on('roleDelete', r => enviarLog(new MessageEmbed().setTitle("🛑 Rol Borrado").setColor("RED").setDescription(`Nombre: **${r.name}**`).setTimestamp()));
+client.on('guildMemberUpdate', (o, n) => {
+    const added = n.roles.cache.filter(r => !o.roles.cache.has(r.id));
+    const removed = o.roles.cache.filter(r => !n.roles.cache.has(r.id));
+    if (added.size > 0) enviarLog(new MessageEmbed().setTitle("➕ Rol Añadido").setColor("GREEN").setDescription(`Usuario: ${n.user.tag}\nRol: **${added.map(r => r.name).join(", ")}**`).setTimestamp());
+    if (removed.size > 0) enviarLog(new MessageEmbed().setTitle("➖ Rol Quitado").setColor("ORANGE").setDescription(`Usuario: ${n.user.tag}\nRol: **${removed.map(r => r.name).join(", ")}**`).setTimestamp());
+});
+
+// Entradas/Salidas y Contador
+client.on('guildMemberAdd', m => {
+    const data = JSON.parse(fs.readFileSync(contadorPath, 'utf8'));
+    data.count += 1;
+    fs.writeFileSync(contadorPath, JSON.stringify(data, null, 2));
+    enviarLog(new MessageEmbed().setTitle("📥 Miembro Nuevo").setColor("GREEN").setDescription(`**${m.user.tag}** se unió.\nContador hoy: **${data.count}**`).setThumbnail(m.user.displayAvatarURL()).setTimestamp());
+});
+
 client.on('guildMemberRemove', m => enviarLog(new MessageEmbed().setTitle("📤 Miembro Salió").setColor("RED").setDescription(`**${m.user.tag}** abandonó el servidor.`).setTimestamp()));
 
+// Canales de Voz
 client.on('voiceStateUpdate', (o, n) => {
     let e = new MessageEmbed().setColor("AQUA").setTimestamp();
-    if (!o.channelId && n.channelId) enviarLog(e.setTitle("🔊 Voz: Conexión").setDescription(`${n.member.user.tag} entró a ${n.channel.name}`));
-    else if (o.channelId && !n.channelId) enviarLog(e.setTitle("🔇 Voz: Desconexión").setDescription(`${o.member.user.tag} salió de ${o.channel.name}`));
+    if (!o.channelId && n.channelId) enviarLog(e.setTitle("🔊 Voz: Conexión").setDescription(`${n.member.user.tag} entró a **${n.channel.name}**`));
+    else if (o.channelId && !n.channelId) enviarLog(e.setTitle("🔇 Voz: Desconexión").setDescription(`${o.member.user.tag} salió de **${o.channel.name}**`));
 });
 
 client.on('ready', () => { 
     console.log(`🔥 ${client.user.username} - SISTEMA PRO ACTIVADO`); 
     const canalLogs = client.channels.cache.get(canalLogsId);
     if (canalLogs) {
-        const embedOnline = new MessageEmbed()
-            .setTitle("✅ Bot Online")
-            .setDescription("El bot **710 Shop** está actualmente online 🔥")
-            .setColor("#00FF00")
-            .setTimestamp();
-        canalLogs.send({ embeds: [embedOnline] }).catch(console.error);
+        canalLogs.send({ embeds: [new MessageEmbed().setTitle("✅ Bot Online").setDescription("Sistema de auditoría y tickets online 🔥").setColor("#00FF00").setTimestamp()] }).catch(console.error);
     }
 });
 

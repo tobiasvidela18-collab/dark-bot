@@ -4,19 +4,19 @@ const config = require(path.join(process.cwd(), 'DataBaseJson', 'config.json'));
 
 module.exports = {
   name: "embed",
-  description: "🔨 | Envía un embed personalizado.",
+  description: "🔨 | Envía un embed personalizado con botón de compra.",
 
   run: async (client, interaction) => {
     if (!interaction.member.permissions.has("ADMINISTRATOR")) {
       return interaction.reply({ 
-        content: `<:warninghost:1383935369275379874> | ¡No tienes permiso!`, 
+        content: `❌ | ¡No tienes permiso!`, 
         ephemeral: true 
       });
     }
 
     try {
       const modal = new Discord.Modal()
-        .setCustomId('modalanuncio_v2') // ID CAMBIADO
+        .setCustomId('modalanuncio_v2') 
         .setTitle('🎉 | Crear Embed');
 
       const tituloInput = new Discord.TextInputComponent()
@@ -26,10 +26,10 @@ module.exports = {
         .setCustomId('desc').setLabel('Descripción:').setStyle('PARAGRAPH').setRequired(true);
 
       const thumbInput = new Discord.TextInputComponent()
-        .setCustomId('thumbnail').setLabel('Thumbnail: (opcional)').setStyle('SHORT').setRequired(false);
+        .setCustomId('thumbnail').setLabel('Thumbnail URL: (opcional)').setStyle('SHORT').setRequired(false);
 
       const bannerInput = new Discord.TextInputComponent()
-        .setCustomId('banner').setLabel('Banner: (opcional)').setStyle('SHORT').setRequired(false);
+        .setCustomId('banner').setLabel('Banner URL: (opcional)').setStyle('SHORT').setRequired(false);
 
       const colorInput = new Discord.TextInputComponent()
         .setCustomId('cor').setLabel('Color(hex):').setStyle('SHORT').setPlaceholder('#000001').setRequired(true);
